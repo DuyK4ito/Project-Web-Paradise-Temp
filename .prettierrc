@@ -1,0 +1,25 @@
+{
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": false,
+    "singleQuote": false,
+    "jsxSingleQuote": true,
+    "bracketSpacing": true,
+    "printWidth": 90,
+    "trailingComma": "all",
+    "plugins": ["prettier-plugin-tailwindcss", "prettier-plugin-organize-imports"],
+    "overrides": [
+        {
+            "files": "src/**/*.tsx",
+            "options": {
+                "tabWidth": 2
+            }
+        },
+        {
+            "files": "tailwind.config.ts",
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
+}
