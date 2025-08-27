@@ -1,11 +1,13 @@
 "use client"
 
+import { CameraNormalizer, MODEL_CONFIGS } from "@/const/cameraUtils"
 import { OrbitControls, useGLTF } from "@react-three/drei"
-import { Canvas } from "@react-three/fiber"
-import { useState } from "react"
+import { Canvas, useThree } from "@react-three/fiber"
+import { useEffect, useRef, useState } from "react"
 
 function ShirtModel({ color, model }: { color: string; model: "shirt" | "shirt2" }) {
   const { scene, materials } = useGLTF(`/models/${model}/scene.gltf`)
+  const config = MODEL_CONFIGS[model]
 
   if (materials) {
     Object.values(materials).forEach((mat: any) => {
@@ -15,16 +17,57 @@ function ShirtModel({ color, model }: { color: string; model: "shirt" | "shirt2"
     })
   }
 
-  return <primitive object={scene} scale={2.2} position={[0, -2.6, 0]} />
+  return <primitive object={scene} scale={config.scale} position={config.position} />
+}
+
+function CameraController({ model }: { model: "shirt" | "shirt2" }) {
+  const { camera, controls } = useThree()
+  const normalizerRef = useRef<CameraNormalizer | null>(null)
+
+  useEffect(() => {
+    if (camera && controls) {
+      normalizerRef.current = new CameraNormalizer(camera, controls, 800)
+    }
+  }, [camera, controls])
+
+  useEffect(() => {
+    if (normalizerRef.current) {
+      // Chuẩn hóa camera khi chuyển đổi model
+      normalizerRef.current.normalizeForModel(model, false)
+      normalizerRef.current.updateControlsLimits(model)
+    }
+  }, [model])
+
+  return <></>
 }
 
 function ShirtViewer({ color, model }: { color: string; model: "shirt" | "shirt2" }) {
+  const config = MODEL_CONFIGS[model]
+
   return (
-    <Canvas camera={{ position: [0, 0, 3] }}>
+    <Canvas
+      camera={{
+        position: config.cameraPosition,
+        fov: 50,
+      }}
+    >
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 5, 5]} intensity={1.2} />
       <ShirtModel color={color} model={model} />
-      <OrbitControls />
+      <OrbitControls
+        ref={(controls) => {
+          if (controls && config.cameraTarget) {
+            controls.target.set(...config.cameraTarget)
+            controls.minDistance = config.minDistance || 2
+            controls.maxDistance = config.maxDistance || 8
+            controls.update()
+          }
+        }}
+        enablePan={false}
+        enableDamping={true}
+        dampingFactor={0.05}
+      />
+      <CameraController model={model} />
     </Canvas>
   )
 }
@@ -88,16 +131,20 @@ function ShirtCustomizer() {
           <p className='text-sm font-semibold'>Chọn kiểu áo:</p>
           <div className='flex gap-2 mt-2'>
             <button
-              className={`px-3 py-2 rounded-lg border font-medium ${
-                model === "shirt" ? "bg-blue-500 text-white" : "bg-white"
+              className={`px-3 py-2 rounded-lg border font-medium transition-all duration-200 ${
+                model === "shirt"
+                  ? "bg-blue-500 text-white shadow-lg"
+                  : "bg-white hover:bg-gray-50"
               }`}
               onClick={() => setModel("shirt")}
             >
               Shirt 1
             </button>
             <button
-              className={`px-3 py-2 rounded-lg border font-medium ${
-                model === "shirt2" ? "bg-blue-500 text-white" : "bg-white"
+              className={`px-3 py-2 rounded-lg border font-medium transition-all duration-200 ${
+                model === "shirt2"
+                  ? "bg-blue-500 text-white shadow-lg"
+                  : "bg-white hover:bg-gray-50"
               }`}
               onClick={() => setModel("shirt2")}
             >
@@ -107,7 +154,7 @@ function ShirtCustomizer() {
         </div>
 
         <button
-          className='mt-6 px-4 py-2 rounded-lg bg-red-500 text-white font-semibold'
+          className='mt-6 px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors duration-200'
           onClick={() => {
             setColor("#ffffff") //reset màu
           }}
